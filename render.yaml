@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: hypnosis-tts-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GOOGLE_TTS_API_KEY
+        sync: false
+      - key: PORT
+        value: 3001

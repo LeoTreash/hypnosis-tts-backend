@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Backend test client</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; background: #12131c; color: #eae7f2; }
+  input, select, button, textarea { font-family: inherit; font-size: 1rem; padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+  button { background: #c9a7d6; border: none; border-radius: 6px; padding: 10px; cursor: pointer; font-weight: 600; }
+  label { display: block; margin-top: 14px; font-size: 0.85rem; color: #a6a3bb; }
+  #out { white-space: pre-wrap; background: #1e2130; padding: 14px; border-radius: 8px; margin-top: 16px; min-height: 60px; }
+  #status { font-size: 0.85rem; color: #a6a3bb; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h2>Backend test client</h2>
+  <p style="color:#a6a3bb; font-size:0.9rem;">
+    This is a plain local file — open it directly in your browser (double-click,
+    or File → Open). It is NOT a Claude artifact, so it's free to call your
+    real backend over the network, unlike the sandboxed demo link.
+  </p>
+
+  <label>Backend URL (from Render, e.g. https://your-app.onrender.com)</label>
+  <input id="backendUrl" placeholder="https://your-app.onrender.com" />
+
+  <label>Goal</label>
+  <select id="goal">
+    <option value="sleep">Sleep</option>
+    <option value="anxiety">Anxiety & calm</option>
+    <option value="confidence">Confidence</option>
+    <option value="habit">Habit change</option>
+    <option value="focus">Focus</option>
+  </select>
+
+  <label>Specifics (free text — e.g. "worry: a presentation tomorrow")</label>
+  <textarea id="specifics" rows="2" placeholder="worry: a presentation tomorrow"></textarea>
+
+  <button id="generateBtn">Generate script + audio</button>
+  <div id="status"></div>
+  <div id="out"></div>
+  <div id="audioContainer"></div>
+
+<script>
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  const base = document.getElementById('backendUrl').value.replace(/\/$/, '');
+  const goal = document.getElementById('goal').value;
+  const specificsRaw = document.getElementById('specifics').value.trim();
+  const status = document.getElementById('status');
+  const out = document.getElementById('out');
+  const audioContainer = document.getElementById('audioContainer');
+  out.textContent = '';
+  audioContainer.innerHTML = '';
+
+  if (!base) { status.textContent = 'Enter your backend URL first.'; return; }
+
+  // Parse "key: value" lines into an answers object
+  const answers = {};
+  specificsRaw.split('\n').forEach(line => {
+    const [k, ...rest] = line.split(':');
+    if (k && rest.length) answers[k.trim()] = rest.join(':').trim();
+  });
+
+  try {
+    status.textContent = 'Generating script with Claude...';
+    const scriptRes = await fetch(`${base}/api/generate-script`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal, answers }),
+    });
+    const scriptData = await scriptRes.json();
+    if (!scriptRes.ok) throw new Error(scriptData.error || 'Script generation failed');
+
+    out.textContent = scriptData.paragraphs.join('\n\n');
+    status.textContent = 'Script ready. Generating audio per paragraph...';
+
+    for (let i = 0; i < scriptData.paragraphs.length; i++) {
+      status.textContent = `Generating audio ${i + 1} of ${scriptData.paragraphs.length}...`;
+      const ttsRes = await fetch(`${base}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: scriptData.paragraphs[i] }),
+      });
+      const ttsData = await ttsRes.json();
+      if (!ttsRes.ok) throw new Error(ttsData.error || 'TTS failed');
+
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = `data:audio/mp3;base64,${ttsData.audioContent}`;
+      audio.style.display = 'block';
+      audio.style.width = '100%';
+      audio.style.marginTop = '8px';
+      audioContainer.appendChild(audio);
+    }
+    status.textContent = `Done. ${scriptData.paragraphs.length} clips generated (cached: reuse this page to see repeats load instantly).`;
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+  }
+});
+</script>
+</body>
+</html>

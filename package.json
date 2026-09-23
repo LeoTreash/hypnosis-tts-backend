@@ -1,0 +1,13 @@
+{
+  "name": "hypnosis-tts-backend",
+  "version": "1.0.0",
+  "description": "Minimal proxy server for Google Cloud Text-to-Speech, keeping the API key server-side.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
