@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MK_FREEWAY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000;
+    --purple: #b026ff;
+    --purple-soft: #8a4fd8;
+    --glow: 0 0 6px rgba(176, 38, 255, 0.8), 0 0 22px rgba(176, 38, 255, 0.45);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--purple); }
+  body { font-family: 'Share Tech Mono', monospace; -webkit-font-smoothing: antialiased; }
+
+  .screen {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px 16px;
+  }
+  .screen.active { display: flex; animation: fadeIn 0.6s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---- Screen 1: home ---- */
+  .title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.2rem, 9vw, 5rem);
+    letter-spacing: 0.12em;
+    text-shadow: var(--glow);
+    margin-bottom: 2.5rem;
+  }
+  .tagline p {
+    font-size: clamp(1rem, 3.5vw, 1.35rem);
+    letter-spacing: 0.25em;
+    text-transform: lowercase;
+    color: var(--purple-soft);
+    line-height: 2.2;
+  }
+  .ride-btn {
+    margin-top: 3rem;
+    width: 220px;
+    height: 64px;
+    background: transparent;
+    border: 2px solid var(--purple);
+    color: var(--purple);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.4em;
+    padding-left: 0.4em; /* offsets trailing letter-spacing so RIDE stays centered */
+    cursor: pointer;
+    animation: flash 1.4s infinite;
+    transition: background 0.2s, color 0.2s;
+  }
+  .ride-btn:hover, .ride-btn:focus-visible {
+    background: var(--purple);
+    color: #000;
+    outline: none;
+  }
+
+  @keyframes flash {
+    0%, 100% { box-shadow: 0 0 0 rgba(176, 38, 255, 0); text-shadow: none; }
+    50%      { box-shadow: var(--glow), inset 0 0 14px rgba(176, 38, 255, 0.35); text-shadow: var(--glow); }
+  }
+
+  /* ---- Screen 2: route list ---- */
+  .heading {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 500;
+    font-size: clamp(1.6rem, 6vw, 2.6rem);
+    letter-spacing: 0.2em;
+    text-shadow: var(--glow);
+    margin-bottom: 2.5rem;
+  }
+  .route-list { list-style: none; }
+  .route-list li + li { margin-top: 1.2rem; }
+  .route {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+    background: none;
+    border: none;
+    color: var(--purple);
+    font-family: inherit;
+    font-size: clamp(1.1rem, 4vw, 1.5rem);
+    letter-spacing: 0.15em;
+    cursor: pointer;
+  }
+  .route .arrow { display: inline-block; animation: nudge 1.2s ease-in-out infinite; }
+  .route:hover .name, .route:focus-visible .name { text-shadow: var(--glow); }
+  .route:focus-visible { outline: 1px dashed var(--purple-soft); outline-offset: 6px; }
+  @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(6px); } }
+
+  /* ---- Screen 3: script (blank placeholder for now) ---- */
+  #script { background: #000; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ride-btn, .route .arrow, .screen.active { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <section class="screen" id="home">
+    <h1 class="title">MK_FREEWAY</h1>
+    <div class="tagline">
+      <p>you are stuck</p>
+      <p>go somewhere</p>
+      <p>ride the freeway</p>
+    </div>
+    <button class="ride-btn" id="rideBtn">RIDE</button>
+  </section>
+
+  <section class="screen" id="routes">
+    <h2 class="heading">PICK A ROUTE</h2>
+    <ul class="route-list" id="routeList"></ul>
+  </section>
+
+  <section class="screen" id="script" aria-label="Script"></section>
+
+<script>
+  // Add new hypnosis scripts here as you write them.
+  const ROUTES = [
+    { id: 'MK_SAMPLE', title: 'MK_SAMPLE' },
+  ];
+
+  const list = document.getElementById('routeList');
+  ROUTES.forEach((route) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'route';
+    btn.innerHTML = '<span class="arrow" aria-hidden="true">&#10148;</span><span class="name"></span>';
+    btn.querySelector('.name').textContent = route.title;
+    btn.addEventListener('click', () => { location.hash = `route/${route.id}`; });
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+
+  document.getElementById('rideBtn').addEventListener('click', () => { location.hash = 'routes'; });
+
+  // Hash routing: #routes → route list, #route/<id> → script screen, anything else → home.
+  function render() {
+    const hash = location.hash.slice(1);
+    let screen = 'home';
+    if (hash === 'routes') screen = 'routes';
+    else if (hash.startsWith('route/')) screen = 'script';
+
+    document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.id === screen));
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', render);
+  render();
+</script>
+</body>
+</html>
