@@ -13,6 +13,7 @@ const { SKELETONS } = require('./skeletons');
 const app = express();
 app.use(cors()); // In production, restrict this to your app's domain only.
 app.use(express.json({ limit: '1mb' }));
+app.use(express.static(path.join(__dirname, 'public'))); // MK_FREEWAY frontend
 
 const GOOGLE_TTS_KEY = process.env.GOOGLE_TTS_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
